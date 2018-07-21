@@ -159,3 +159,178 @@ Many times as data scientists, we think of the predictions we make as discrete d
 Does all of this sound contrived to you, like I am trying to force an analogy?  Let me make a concrete example from my real life data science job.  I am responsible for making the machine learning revenue forecasts for Microsoft.  Twice a quarter, I forecast the revenue for all of the products at Microsoft world wide.    While these product forecasts do need to be accurate for internal use, the forecasts are also summed up to create segment level forecasts.  Microsoft's segment level forecasts go to Wall Street and having our forecasts fail to meet actuals can be a big problem for the company.  We can think about our rogue sneaking past our guards as being an analogy for nailing the segment level forecast.  If I succeed for most of the products (our individual guards) but have a critical miss of \$1 billion error on one of them, then I have a \$1 billion error for the segment and I failed.  Also like our rogue, one success doesn't mean we have won.  There is always another quarter and doing well one quarter doesn't mean Wall Street will cut you some slack the next.  Finally, a critical success is less valuable than a critical failure is problematic.  Getting the forecasts perfect one quarter will just get your a "good job" and a pat on the back, but a big miss costs the company.  In this context, it is easy to see why the finance team doesn't take the machine learning forecasts as gospel, even with our track record of high accuracy.
 
 So as you evaluate your models, keep our sneaky friend in mind.  Rather than just thinking about your average metrics, think about your distribution of errors.  Are your errors clustered nicely around the mean or are they scattershot of low and high?  What does that mean for your application?  Are those really low errors valuable enough to be worth getting the really high ones from time to time?  Many times having a *reliable* model may be more valuable than a less realiable one with higher average performance, so when you evaluate, think distributions, not means.
+
+
+## Thinking about ability scores
+
+What's it look like when we play with Ability Scores:
+
+```{r d6Distribution, echo = FALSE}
+barplot(setNames(rep(1/6,6), 1:6), xlab = "Roll Value", ylab = "Probability of Rolling", ylim = c(0,.2), main = "Roll 1d6")
+```
+
+So equal odds of rolling 1-6 with each die roll (if they're fair dice)
+
+## Different Ability Score Rules
+
+Each character has 6 Ability Scores: Strength, Dexterity, Constitution, Intelligence, Wisdom, and Charisma.
+
+
+### Old DnD Rules: 3d6
+
+The old DnD rules were fairly simple: roll 3 six-sided dice (3d6) and add up the total for each of the 6 Ability Scores.
+
+The Distribution of expected scores looked like this:
+
+```{r roll3d6Distribution, echo = FALSE}
+prob3d6 = expand.grid(1:6,1:6,1:6)
+prob3d6 = rowSums(prob3d6)
+prob3d6mean <- mean(prob3d6)
+prob3d6median <- median(prob3d6)
+prob3d6 <- table(prob3d6)/length(prob3d6)
+barplot(prob3d6, xlab = "Roll Value", ylab = "Probability of Rolling", ylim = c(0,0.2), main = "Old Rules: 3d6")
+```
+
+This results an approximately normal distribution centered at `r prob3d6mean`.
+
+
+### Newer Dnd Rules (I'm playing with now): 4d6, drop the lowest, reroll 1s
+
+The Newer Dnd Rules (thatI'm playing with now) are alot more complicated:
+
+1. Roll 4 six-sided dice (4d6)
+1. Reroll any 1s (more on this in a minute)
+1. Drop the lowest (leaving 3 scores)
+1. Add up the total for the 3 remaining dice
+1. Repeat for each of the 6 Ability Scores.
+
+For mathematical purposes, I'm going to treat the calculation like this:
+* Reroll any 1s == each die is treated as a d5 +1 (scores range from 2 to 6 with equal weights)
+* because I'm lazy, I'm going to calculate as 4d5, subtract the lowest, +3
+
+The Distribution of expected scores looked like this:
+
+```{r NewRulesDistribution, echo = FALSE}
+
+probNewRules <- expand.grid(2:6,2:6,2:6,2:6)
+probNewRules <- rowSums(probNewRules) + (-1 * apply(probNewRules, 1, FUN=min) )
+probNewRulesmean <- mean(probNewRules)
+probNewRulesmedian <- median(probNewRules)
+probNewRules <- table(probNewRules)/length(probNewRules)
+
+barplot(probNewRules, xlab = "Roll Value", ylab = "Probability of Rolling", ylim = c(0,0.2), main = "Newer Dnd Rules: 4d6, drop the lowest, reroll 1s")
+
+```
+
+This results an dramatically higher scores with a mean of `r probNewRulesmean` and median of `r probNewRulesmedian`.
+
+
+### A more morderate alternative: 3d6, reroll 1s
+
+A more morderate alternative is a little less complicated:
+
+1. Roll 3 six-sided dice (3d6)
+1. Reroll any 1s (more on this in a minute)
+1. Add up the total for the 3 dice
+1. Repeat for each of the 6 Ability Scores.
+
+For mathematical purposes, I'm going to treat the calculation like this:
+* Reroll any 1s == each die is treated as a d5 +1 (scores range from 2 to 6 with equal weights)
+* because I'm lazy, I'm going to calculate as 4d5, subtract the lowest, +3
+
+The Distribution of expected scores looked like this:
+
+```{r Alternate1Distribution, echo = FALSE}
+
+probAlternate1 <- expand.grid(2:6,2:6,2:6)
+probAlternate1 <- rowSums(probAlternate1) 
+probAlternate1mean <- mean(probAlternate1)
+probAlternate1median <- median(probAlternate1)
+probAlternate1 <- table(probAlternate1)/length(probAlternate1)
+
+barplot(probAlternate1, xlab = "Roll Value", ylab = "Probability of Rolling", ylim = c(0,0.2), main = "A more morderate alternative: 3d6, reroll 1s")
+
+```
+
+This results in scores approximately 1.5 points higher: an approximately normal distribution with a mean of `r probAlternate1mean` and median of `r probAlternate1median`.
+
+
+
+### Another more morderate alternative: 4d6, drop the lowest
+
+Another more morderate alternative is also a little less complicated:
+
+1. Roll 4 six-sided dice (4d6)
+1. Drop the lowest (leaving 3 scores)
+1. Add up the total for the 3 dice
+1. Repeat for each of the 6 Ability Scores.
+
+The Distribution of expected scores looked like this:
+
+```{r Alternate2Distribution, echo = FALSE}
+library(tidyverse)
+
+probAlternate2 <- expand.grid(1:6,1:6,1:6,1:6)
+probAlternate2 <- rowSums(probAlternate2) + (-1 * apply(probAlternate2, 1, FUN=min) )
+probAlternate2mean <- mean(probAlternate2)
+probAlternate2median <- median(probAlternate2)
+probAlternate2 <- table(probAlternate2)/length(probAlternate2)
+
+barplot(probAlternate2, xlab = "Roll Value", ylab = "Probability of Rolling", ylim = c(0,0.2), main = "Another more morderate alternative: 4d6, drop the lowest")
+
+```
+
+This results in scores that are also approximately 1.5 points higher: an approximately normal distribution with a mean of `r probAlternate2mean` and median of `r probAlternate2median`.
+
+
+## Modifiers
+
+To determine an ability modifier without consulting the table, subtract 10 from the ability score and then divide the total by 2 (round down).
+
+
+
+### Newer Dnd Rules (I'm playing with now): 4d6, drop the lowest, reroll 1s
+
+The Newer Dnd Rules (thatI'm playing with now) are alot more complicated:
+
+1. Roll 4 six-sided dice (4d6)
+1. Reroll any 1s (more on this in a minute)
+1. Drop the lowest (leaving 3 scores)
+1. Add up the total for the 3 remaining dice
+1. Repeat for each of the 6 Ability Scores.
+
+For mathematical purposes, I'm going to treat the calculation like this:
+* Reroll any 1s == each die is treated as a d5 +1 (scores range from 2 to 6 with equal weights)
+* because I'm lazy, I'm going to calculate as 4d5, subtract the lowest, +3
+
+The Distribution of expected scores looked like this:
+
+```{r NewRulesModifierDistribution, echo = FALSE}
+
+probNewRules <- expand.grid(2:6,2:6,2:6,2:6)
+probNewRules <- rowSums(probNewRules) + (-1 * apply(probNewRules, 1, FUN=min) )
+probNewRulesmean <- mean(probNewRules)
+probNewRulesmedian <- median(probNewRules)
+probNewRules <- table(probNewRules)/length(probNewRules)
+
+barplot(probNewRules, xlab = "Roll Value", ylab = "Probability of Rolling", ylim = c(0,0.2), main = "Newer Dnd Rules: 4d6, drop the lowest, reroll 1s")
+
+probNewRules <- probNewRules %>% 
+  as_tibble() %>% 
+  rename(ability_score = probNewRules,
+         probability = n) %>% 
+  mutate(ability_score = as.integer(ability_score),
+         modifier = floor( (ability_score - 10 ) / 2))
+
+probNewRulesmodifiermean <- mean(probNewRules$modifier)
+probNewRulesmodifiermedian <- median(probNewRules$modifier)
+
+probNewRules %>% 
+  ggplot(aes(x = modifier, y = probability)) + 
+  geom_col() + 
+  theme_classic() 
+
+
+```
+
+This results an dramatically higher scores with a mean of `r probNewRulesmodifiermean` and median of `r probNewRulesmodifiermedian`.
